@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>For Esther — A Universe of Her Own</title>
+
+<!-- ============================================================
+     FONTS
+     Display: Cormorant Garamond (romantic, cinematic serif)
+     Body: Inter (quiet, legible sans)
+============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   0. CONFIG-DRIVEN DESIGN TOKENS
+   ============================================================ */
+:root{
+  --void:        #05070d;
+  --void-2:      #090c16;
+  --sapphire-deep: #0c1f45;
+  --sapphire:      #2a4d8f;
+  --sapphire-light: #6f9de8;
+  --gold:          #d4a24c;
+  --ember:         #e8734a;
+  --starlight:     #f5f3ec;
+  --starlight-dim: #c9c6bc;
+  --ink:           #9aa1b5;
+
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'Inter', -apple-system, sans-serif;
+
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+html{ scroll-behavior:smooth; background:var(--void); }
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto; }
+}
+
+body{
+  background:var(--void);
+  color:var(--starlight);
+  font-family:var(--sans);
+  overflow-x:hidden;
+  width:100%;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Prevent any horizontal overflow anywhere */
+#app{ position:relative; width:100%; overflow-x:hidden; }
+
+::selection{ background:var(--gold); color:var(--void); }
+
+/* Focus visibility — accessibility */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible{
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* Skip link */
+.skip-link{
+  position:absolute; left:-9999px; top:0; z-index:999;
+  background:var(--starlight); color:var(--void);
+  padding:12px 20px; font-family:var(--sans); font-weight:600;
+}
+.skip-link:focus{ left:16px; top:16px; }
+
+/* ============================================================
+   1. PARTICLE / STAR CANVAS BACKGROUND (persistent, ambient)
+   ============================================================ */
+#particle-canvas{
+  position:fixed; inset:0; width:100%; height:100%;
+  z-index:0; pointer-events:none;
+}
+
+/* ============================================================
+   2. PROGRESS INDICATOR — minimal vertical numerals
+   ============================================================ */
+.progress-rail{
+  position:fixed;
+  right:clamp(14px, 3vw, 40px);
+  top:50%;
+  transform:translateY(-50%);
+  z-index:50;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+}
+.progress-rail button{
+  background:none; border:none; cursor:pointer;
+  font-family:var(--serif); font-size:13px; letter-spacing:0.05em;
+  color:var(--ink); opacity:0.45;
+  transition:opacity .5s var(--ease-out), color .5s var(--ease-out);
+  padding:6px;
+  line-height:1;
+  position:relative;
+}
+.progress-rail button::after{
+  content:'';
+  position:absolute; left:50%; top:100%; transform:translateX(-50%);
+  width:1px; height:14px;
+  background:var(--ink); opacity:0.25;
+}
+.progress-rail button:last-child::after{ display:none; }
+.progress-rail button.active{
+  opacity:1; color:var(--gold);
+}
+.progress-rail button.active::before{
+  content:'';
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:26px; height:26px;
+  border:1px solid var(--gold);
+  border-radius:50%;
+  opacity:0.5;
+}
+@media (max-width: 720px){
+  .progress-rail{ display:none; }
+}
+
+/* Mobile progress: thin top bar instead */
+.progress-bar-mobile{
+  display:none;
+  position:fixed; top:0; left:0; right:0; height:2px; z-index:60;
+  background:rgba(255,255,255,0.08);
+}
+.progress-bar-mobile-fill{
+  height:100%; width:0%;
+  background:linear-gradient(90deg, var(--sapphire-light), var(--gold));
+  transition:width .1s linear;
+}
+@media (max-width: 720px){
+  .progress-bar-mobile{ display:block; }
+}
+
+/* ============================================================
+   3. LAYOUT PRIMITIVES
+   ============================================================ */
+.scene{
+  position:relative;
+  min-height:100vh;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 100px clamp(20px, 6vw, 80px);
+  z-index:1;
+}
+@supports (padding: max(0px)){
+  .scene{
+    padding-left: max(clamp(20px, 6vw, 80px), env(safe-area-inset-left));
+    padding-right: max(clamp(20px, 6vw, 80px), env(safe-area-inset-right));
+  }
+}
+
+.scene-inner{
+  max-width: 760px;
+  width:100%;
+  text-align:center;
+}
+
+.eyebrow{
+  font-family:var(--sans);
+  font-size:11px;
+  letter-spacing:0.32em;
+  text-transform:uppercase;
+  color:var(--gold);
+  opacity:0;
+  margin-bottom:22px;
+  font-weight:500;
+}
+
+.display{
+  font-family:var(--serif);
+  font-weight:400;
+  font-size:clamp(2.2rem, 6.5vw, 4.6rem);
+  line-height:1.08;
+  letter-spacing:-0.01em;
+  color:var(--starlight);
+}
+.display em{
+  font-style:italic;
+  font-weight:500;
+  color:var(--gold);
+}
+
+.lede{
+  font-family:var(--sans);
+  font-weight:300;
+  font-size:clamp(1rem, 2vw, 1.2rem);
+  line-height:1.75;
+  color:var(--starlight-dim);
+  max-width:560px;
+  margin:28px auto 0;
+}
+
+.fade-up{
+  opacity:0;
+  transform:translateY(28px);
+  transition: opacity 1.1s var(--ease-out), transform 1.1s var(--ease-out);
+}
+.fade-up.in-view{
+  opacity:1;
+  transform:translateY(0);
+}
+.fade-up.d1{ transition-delay: .15s; }
+.fade-up.d2{ transition-delay: .32s; }
+.fade-up.d3{ transition-delay: .5s; }
+.fade-up.d4{ transition-delay: .68s; }
+
+@media (prefers-reduced-motion: reduce){
+  .fade-up{ transition: opacity .4s ease; transform:none; }
+  html{ scroll-behavior:auto; }
+}
+
+/* thin divider used sparingly as a structural device */
+.hairline{
+  width:1px; height:56px;
+  background:linear-gradient(to bottom, transparent, var(--sapphire-light), transparent);
+  margin: 0 auto;
+  opacity:0.5;
+}
+
+/* ============================================================
+   4. INTRO SCENE
+   ============================================================ */
+.intro-scene{ min-height:100svh; }
+.intro-mark{
+  font-family:var(--serif);
+  font-style:italic;
+  font-size:clamp(0.95rem, 1.6vw, 1.1rem);
+  color:var(--sapphire-light);
+  letter-spacing:0.06em;
+  margin-bottom:34px;
+  opacity:0.85;
+}
+.intro-title{
+  font-family:var(--serif);
+  font-size:clamp(2.6rem, 9vw, 6.2rem);
+  line-height:1.02;
+  font-weight:400;
+  color:var(--starlight);
+}
+.intro-title .accent{ color:var(--gold); font-style:italic; }
+.intro-sub{
+  margin-top:26px;
+  font-family:var(--sans);
+  font-weight:300;
+  font-size:clamp(0.95rem, 1.8vw, 1.15rem);
+  color:var(--ink);
+  letter-spacing:0.02em;
+}
+.scroll-cue{
+  margin-top:70px;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  font-size:10px; letter-spacing:0.3em; text-transform:uppercase;
+  color:var(--ink); opacity:0.6;
+}
+.scroll-cue-line{
+  width:1px; height:34px; background:var(--ink); opacity:0.4;
+  animation: scrollPulse 2.2s var(--ease-in-out) infinite;
+}
+@keyframes scrollPulse{
+  0%,100%{ transform:scaleY(1); opacity:0.4; }
+  50%{ transform:scaleY(0.5); opacity:0.9; }
+}
+@media (prefers-reduced-motion: reduce){
+  .scroll-cue-line{ animation:none; }
+}
+
+/* ============================================================
+   5. TRIPLE IDENTITY SCENE (Star / Fire / Sapphire)
+   ============================================================ */
+.identity-grid{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(24px, 5vw, 64px);
+  margin-top:64px;
+  width:100%;
+}
+@media (max-width: 720px){
+  .identity-grid{ grid-template-columns:1fr; gap:56px; }
+}
+.identity-item{
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center;
+}
+.identity-glyph{
+  width:64px; height:64px;
+  margin-bottom:24px;
+  position:relative;
+}
+.identity-word{
+  font-family:var(--serif); font-style:italic; font-weight:500;
+  font-size:clamp(1.5rem, 3vw, 1.9rem);
+  margin-bottom:14px;
+}
+.identity-word.star{ color:var(--starlight); }
+.identity-word.fire{ color:var(--ember); }
+.identity-word.sapphire{ color:var(--sapphire-light); }
+.identity-desc{
+  font-family:var(--sans); font-weight:300; font-size:0.94rem;
+  line-height:1.7; color:var(--ink); max-width:260px;
+}
+
+/* ============================================================
+   6. MEMORY CONSTELLATION — interactive star map
+   ============================================================ */
+.constellation-scene{ min-height:130vh; padding-top:140px; padding-bottom:140px; }
+.constellation-stage{
+  position:relative;
+  width:100%;
+  max-width:900px;
+  height:clamp(420px, 60vh, 620px);
+  margin: 70px auto 0;
+}
+.mem-star{
+  position:absolute;
+  width:14px; height:14px;
+  transform:translate(-50%,-50%);
+  cursor:pointer;
+  background:none; border:none; padding:0;
+}
+.mem-star-dot{
+  width:100%; height:100%;
+  border-radius:50%;
+  background:var(--gold);
+  box-shadow: 0 0 0px 0px rgba(212,162,76,0.6);
+  transition: box-shadow .4s var(--ease-out), transform .4s var(--ease-out), background .4s;
+  animation: twinkle 3.4s ease-in-out infinite;
+}
+.mem-star:nth-child(2n) .mem-star-dot{ animation-delay: -1.1s; }
+.mem-star:nth-child(3n) .mem-star-dot{ animation-delay: -2.2s; }
+@keyframes twinkle{
+  0%,100%{ opacity:0.65; box-shadow:0 0 8px 1px rgba(212,162,76,0.35); }
+  50%{ opacity:1; box-shadow:0 0 18px 4px rgba(212,162,76,0.6); }
+}
+.mem-star:hover .mem-star-dot, .mem-star:focus-visible .mem-star-dot, .mem-star.opened .mem-star-dot{
+  transform:scale(1.6);
+  background:var(--starlight);
+  box-shadow: 0 0 24px 6px rgba(245,243,236,0.8);
+}
+.mem-star:focus-visible{ outline:none; }
+.mem-star:focus-visible .mem-star-dot{ outline:2px solid var(--gold); outline-offset:6px; border-radius:50%; }
+.mem-star-label{
+  position:absolute; top:22px; left:50%; transform:translateX(-50%);
+  font-family:var(--sans); font-size:11px; letter-spacing:0.04em;
+  color:var(--ink); white-space:nowrap; opacity:0;
+  transition:opacity .3s;
+  pointer-events:none;
+}
+.mem-star:hover .mem-star-label{ opacity:0.8; }
+
+.constellation-hint{
+  text-align:center; margin-top:20px;
+  font-size:12px; color:var(--ink); letter-spacing:0.05em;
+  font-style:italic; font-family:var(--serif);
+  opacity:0.7;
+}
+
+/* memory reveal panel */
+.memory-panel{
+  position:fixed;
+  inset:0;
+  z-index:80;
+  display:flex; align-items:center; justify-content:center;
+  padding: 24px;
+  background: rgba(5,7,13,0.86);
+  backdrop-filter: blur(6px);
+  opacity:0; pointer-events:none;
+  transition: opacity .45s var(--ease-out);
+}
+.memory-panel.open{ opacity:1; pointer-events:auto; }
+.memory-card{
+  max-width: 520px;
+  width:100%;
+  text-align:center;
+  transform: translateY(18px) scale(0.97);
+  transition: transform .5s var(--ease-out);
+}
+.memory-panel.open .memory-card{ transform: translateY(0) scale(1); }
+.memory-photo{
+  width:100%;
+  aspect-ratio: 4/3;
+  border-radius:2px;
+  object-fit:cover;
+  margin-bottom:26px;
+  border: 1px solid rgba(212,162,76,0.25);
+}
+.memory-caption{
+  font-family:var(--serif); font-style:italic; font-size:1.35rem;
+  color:var(--starlight); line-height:1.5; margin-bottom:10px;
+}
+.memory-date{
+  font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--gold); opacity:0.85;
+}
+.memory-close{
+  margin-top:34px;
+  background:none; border:1px solid rgba(245,243,236,0.25);
+  color:var(--starlight-dim); font-family:var(--sans); font-size:12px;
+  letter-spacing:0.1em; text-transform:uppercase;
+  padding:11px 26px; cursor:pointer;
+  transition: border-color .3s, color .3s;
+}
+.memory-close:hover, .memory-close:focus-visible{ border-color:var(--gold); color:var(--gold); }
+
+/* ============================================================
+   7. TRIBUTE SCENE — flowing lines of praise
+   ============================================================ */
+.tribute-scene{ padding-top:150px; padding-bottom:150px; }
+.tribute-lines{ display:flex; flex-direction:column; gap:30px; }
+.tribute-line{
+  font-family:var(--serif); font-weight:400;
+  font-size:clamp(1.4rem, 3.6vw, 2.2rem);
+  line-height:1.4; color:var(--starlight-dim);
+}
+.tribute-line em{ font-style:italic; color:var(--gold); font-weight:500; }
+.tribute-line .sap{ color:var(--sapphire-light); font-style:italic; font-weight:500; }
+.tribute-line .fir{ color:var(--ember); font-style:italic; font-weight:500; }
+
+/* ============================================================
+   8. SECRET MOMENTS — unlockable whispers
+   ============================================================ */
+.secrets-scene{ padding-top:140px; padding-bottom:140px; }
+.secrets-grid{
+  display:flex; flex-direction:column; gap:16px;
+  max-width:600px; margin:56px auto 0; text-align:left;
+}
+.secret-item{
+  border-top: 1px solid rgba(245,243,236,0.12);
+  padding: 22px 4px;
+}
+.secret-item:last-child{ border-bottom: 1px solid rgba(245,243,236,0.12); }
+.secret-trigger{
+  width:100%; background:none; border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  color:var(--starlight); font-family:var(--serif); font-size:1.15rem; font-style:italic;
+  padding:2px 0;
+  text-align:left;
+}
+.secret-trigger .plus{
+  font-family:var(--sans); font-size:20px; font-weight:300; color:var(--gold);
+  transition: transform .4s var(--ease-out);
+  flex-shrink:0;
+}
+.secret-item.open .secret-trigger .plus{ transform:rotate(45deg); }
+.secret-body{
+  max-height:0; overflow:hidden;
+  transition: max-height .5s var(--ease-in-out), opacity .4s, margin .4s;
+  opacity:0;
+}
+.secret-item.open .secret-body{
+  max-height:240px; opacity:1; margin-top:14px;
+}
+.secret-body p{
+  font-family:var(--sans); font-weight:300; font-size:0.98rem;
+  line-height:1.75; color:var(--ink);
+}
+
+/* ============================================================
+   9. BIRTHDAY CAKE SCENE — the emotional peak
+   ============================================================ */
+.cake-scene{ padding-top:120px; padding-bottom:100px; }
+.cake-stage{
+  position:relative;
+  width:220px; height:220px;
+  margin: 50px auto 0;
+  cursor:pointer;
+  background:none; border:none; padding:0;
+}
+.cake-stage:focus-visible{ outline:2px solid var(--gold); outline-offset:10px; border-radius:50%; }
+.candle{
+  position:absolute; bottom:112px; left:50%; transform:translateX(-50%);
+  width:6px; height:46px;
+  background: linear-gradient(to bottom, var(--gold), #a97a2f);
+  border-radius:2px;
+}
+.flame{
+  position:absolute; bottom:100%; left:50%; transform-origin:bottom center;
+  transform:translateX(-50%) scale(0);
+  width:16px; height:26px;
+  border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 50% 70%, #fff7d6, var(--gold) 55%, var(--ember) 100%);
+  filter: drop-shadow(0 0 10px rgba(232,115,74,0.7));
+  transition: transform 1.1s var(--ease-out);
+  animation: flicker 2.6s ease-in-out infinite;
+}
+.candle.lit .flame{ transform:translateX(-50%) scale(1); }
+@keyframes flicker{
+  0%,100%{ transform:translateX(-50%) scaleY(1) scaleX(1) rotate(0deg); }
+  25%{ transform:translateX(-50%) scaleY(1.06) scaleX(0.94) rotate(-2deg); }
+  50%{ transform:translateX(-50%) scaleY(0.95) scaleX(1.05) rotate(2deg); }
+  75%{ transform:translateX(-50%) scaleY(1.03) scaleX(0.97) rotate(-1deg); }
+}
+.candle:not(.lit) .flame{ animation:none; }
+.cake-body{
+  position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  width:180px; height:112px;
+  background: linear-gradient(180deg, var(--sapphire) 0%, var(--sapphire-deep) 100%);
+  border-radius:4px 4px 10px 10px;
+  box-shadow: 0 20px 60px -14px rgba(42,77,143,0.55);
+}
+.cake-body::before{
+  content:'';
+  position:absolute; top:-14px; left:-6px; right:-6px; height:26px;
+  background: linear-gradient(180deg, var(--sapphire-light), var(--sapphire));
+  border-radius:6px;
+}
+.cake-tap-hint{
+  margin-top:36px;
+  font-family:var(--sans); font-size:11px; letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--ink);
+}
+.cake-scene .display{ margin-top:8px; }
+
+/* ============================================================
+   10. CELEBRATION SCENE — confetti / burst
+   ============================================================ */
+.celebration-scene{
+  min-height:100vh; padding-top:100px; padding-bottom:100px;
+  overflow:hidden;
+}
+.confetti-canvas{
+  position:absolute; inset:0; width:100%; height:100%;
+  pointer-events:none; z-index:2;
+}
+
+/* ============================================================
+   11. FINAL MESSAGE + SIGNATURE
+   ============================================================ */
+.final-scene{ min-height:100svh; }
+.final-message{
+  font-family:var(--serif); font-weight:400; font-style:italic;
+  font-size:clamp(1.3rem, 3.2vw, 1.8rem);
+  line-height:1.7; color:var(--starlight-dim);
+  max-width:600px; margin:0 auto;
+}
+.signature{
+  margin-top:56px;
+  font-family:var(--serif); font-style:italic; font-weight:500;
+  font-size:clamp(1.3rem, 2.6vw, 1.6rem);
+  color:var(--gold);
+}
+.signature-sub{
+  margin-top:8px;
+  font-family:var(--sans); font-size:11px; letter-spacing:0.18em;
+  text-transform:uppercase; color:var(--ink);
+}
+
+/* ============================================================
+   12. MUSIC CONTROLLER
+   ============================================================ */
+.music-toggle{
+  position:fixed; z-index:60;
+  bottom: clamp(18px, 4vw, 30px);
+  left: clamp(18px, 4vw, 30px);
+  width:48px; height:48px;
+  border-radius:50%;
+  border:1px solid rgba(245,243,236,0.2);
+  background: rgba(9,12,22,0.6);
+  backdrop-filter: blur(8px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  transition: border-color .3s, transform .3s;
+}
+.music-toggle:hover, .music-toggle:focus-visible{ border-color:var(--gold); transform:scale(1.06); }
+.music-toggle svg{ width:18px; height:18px; }
+.music-bars{ display:flex; align-items:flex-end; gap:2.5px; height:14px; }
+.music-bars span{
+  width:2.5px; background:var(--gold); border-radius:1px;
+  animation: bar 1s ease-in-out infinite;
+}
+.music-bars span:nth-child(1){ height:6px; animation-delay:-0.6s; }
+.music-bars span:nth-child(2){ height:14px; animation-delay:-0.3s; }
+.music-bars span:nth-child(3){ height:9px; animation-delay:-0.9s; }
+@keyframes bar{
+  0%,100%{ transform:scaleY(0.4); }
+  50%{ transform:scaleY(1); }
+}
+.music-toggle.paused .music-bars span{ animation-play-state:paused; transform:scaleY(0.3); }
+.music-toggle.paused .music-bars span:nth-child(2){ transform:scaleY(0.5); }
+
+@media (max-width: 720px){
+  .music-toggle{ width:44px; height:44px; }
+}
+
+/* Safe-area bottom padding on last scene for mobile nav bars */
+@supports (padding: max(0px)){
+  .final-scene{ padding-bottom: max(100px, env(safe-area-inset-bottom)); }
+}
+
+/* Utility: visually hidden but accessible */
+.visually-hidden{
+  position:absolute; width:1px; height:1px;
+  padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to content</a>
+
+<div id="app">
+  <canvas id="particle-canvas" aria-hidden="true"></canvas>
+  <div class="progress-bar-mobile" aria-hidden="true"><div class="progress-bar-mobile-fill" id="mobileProgressFill"></div></div>
+
+  <!-- Progress rail injected by JS -->
+  <nav class="progress-rail" id="progressRail" aria-label="Story progress"></nav>
+
+  <!-- Music toggle injected by JS -->
+  <button class="music-toggle paused" id="musicToggle" aria-pressed="false" aria-label="Play background music">
+    <div class="music-bars" aria-hidden="true"><span></span><span></span><span></span></div>
+  </button>
+
+  <main id="main">
+    <!-- Scenes injected by JS from CONTENT config -->
+  </main>
+</div>
+
+<!-- ============================================================
+     Background audio element (MusicController)
+============================================================ -->
+<audio id="bgMusic" loop preload="none"></audio>
+
+<script>
+/* ================================================================
+   ============================================================
+   CONFIGURATION — EDIT EVERYTHING BELOW THIS LINE FREELY
+   This is the only section that needs to change to personalize
+   the experience. Nothing below "END CONFIG" needs to be touched.
+   ============================================================
+   ================================================================ */
+const CONTENT = {
+
+  // ---- Person + tone ----
+  recipientName: "Esther",
+  authorName: "Sovereign Emperor",
+
+  // ---- Background music ----
+  // Provide a direct URL to an mp3/ogg file. Leave empty to disable music.
+  musicUrl: "",
+  musicLabel: "Play music",
+
+  // ---- INTRO SCENE ----
+  intro: {
+    eyebrow: "a universe, built for one person",
+    title1: "Somewhere in the sky,",
+    title2: "a light was waiting to be named.",
+    sub: "Tonight, it takes yours.",
+  },
+
+  // ---- IDENTITY SCENE (Star / Fire / Sapphire) ----
+  identity: {
+    eyebrow: "who you are",
+    heading: "You were never going to be <em>ordinary</em>.",
+    lede: "Some people are one thing. You've always been three — and each one, impossible to look away from.",
+    items: [
+      {
+        word: "Star",
+        color: "star",
+        desc: "Distant enough to seem unreachable, close enough to guide anyone who looks up on a dark night."
+      },
+      {
+        word: "Fire",
+        color: "fire",
+        desc: "Warm to the people you love, and absolutely uncontainable to anything that tries to dim you."
+      },
+      {
+        word: "Sapphire",
+        color: "sapphire",
+        desc: "Rare. Cut with pressure and time. Worth more the closer anyone looks."
+      },
+    ]
+  },
+
+  // ---- MEMORY CONSTELLATION ----
+  // Positions are percentages (top/left) within the stage. Keep them spread out.
+  // photo: replace with a real image URL. caption + date are editable.
+  constellation: {
+    eyebrow: "the sky remembers",
+    heading: "Every star here is a moment we shared.",
+    lede: "Tap one. Let it open.",
+    stars: [
+      { top: "18%", left: "22%", label: "The first laugh", photo: "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&q=80", caption: "The first time I heard you laugh, I understood why people write songs.", date: "Chapter One" },
+      { top: "34%", left: "62%", label: "A quiet afternoon", photo: "https://images.unsplash.com/photo-1495197359483-d092478c170a?w=800&q=80", caption: "You don't need a big moment to be unforgettable. An ordinary Tuesday with you outshines most people's best day.", date: "Somewhere in between" },
+      { top: "58%", left: "16%", label: "That one trip", photo: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800&q=80", caption: "We got lost, and I didn't mind, because I was exactly where I wanted to be.", date: "The good kind of lost" },
+      { top: "70%", left: "50%", label: "A late-night talk", photo: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80", caption: "Some of my favorite versions of you show up after midnight, when you stop performing and just are.", date: "Past 1am" },
+      { top: "40%", left: "84%", label: "Just us", photo: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80", caption: "No occasion. No agenda. Just you, and that was always enough of a reason.", date: "No date needed" },
+      { top: "82%", left: "78%", label: "Today", photo: "https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?w=800&q=80", caption: "And now, here — another year, another reason the sky looks a little brighter.", date: "This very year" },
+    ]
+  },
+
+  // ---- TRIBUTE SCENE ----
+  tribute: {
+    eyebrow: "what I see, when I see you",
+    lines: [
+      'You carry yourself like someone who has already survived the hard part.',
+      'You love people the way <span class="fir">fire</span> keeps a room warm — without asking anything back.',
+      'And underneath it all, there\'s a <span class="sap">clarity</span> in you most people spend a lifetime looking for.',
+      'Happy birthday to someone the sky clearly worked hard on.'
+    ]
+  },
+
+  // ---- SECRET MOMENTS (accordion of private notes) ----
+  secrets: {
+    eyebrow: "for your eyes only",
+    heading: "A few things I've never said out loud.",
+    items: [
+      { title: "The thing about your laugh", body: "It's the realest sound I know. No performance in it, just you. I hope you never learn to hold it back." },
+      { title: "Why I started this", body: "I wanted one day of the year to belong entirely to you — no context, no reason, just proof that you're seen." },
+      { title: "What I hope for you this year", body: "That you chase the things that scare you a little, keep the people who make you feel like this, and never shrink to fit a room." },
+      { title: "One thing I'm proud of you for", body: "You keep showing up as yourself, even on the days it would be easier not to. That's rarer than people think." },
+    ]
+  },
+
+  // ---- BIRTHDAY CAKE SCENE ----
+  cake: {
+    eyebrow: "make a wish",
+    heading: "Blow out the light. See what happens.",
+    tapHint: "Tap the candle",
+    afterHeading: "Happy Birthday, <em>Esther</em>.",
+  },
+
+  // ---- CELEBRATION SCENE ----
+  celebration: {
+    heading: "Let the sky celebrate with you.",
+    lede: "Every star in this universe was lit for exactly one person tonight.",
+  },
+
+  // ---- FINAL MESSAGE ----
+  final: {
+    message: "If a star, a fire, and a sapphire ever argued about who gets to represent you — I'd tell them there's room for all three. Because that's exactly what you are. Here's to another year of being impossible to look away from.",
+    signature: "With all of it,",
+  },
+};
+/* ============================================================
+   END CONFIG
+   ============================================================ */
+
+/* ================================================================
+   SCENE DEFINITIONS — the "story" is an ordered list of scenes.
+   Numbered progress indicator reflects this real sequence.
+   ================================================================ */
+const SCENES = [
+  { id: "intro", num: "01", label: "Beginning" },
+  { id: "identity", num: "02", label: "Who You Are" },
+  { id: "constellation", num: "03", label: "Memories" },
+  { id: "tribute", num: "04", label: "Tribute" },
+  { id: "secrets", num: "05", label: "Secrets" },
+  { id: "cake", num: "06", label: "The Wish" },
+  { id: "celebration", num: "07", label: "Celebration" },
+  { id: "final", num: "08", label: "Forever" },
+];
+
+/* ================================================================
+   COMPONENT: IntroScene
+   ================================================================ */
+function IntroScene(c){
+  return `
+  <section id="intro" class="scene intro-scene" aria-label="Introduction">
+    <div class="scene-inner">
+      <p class="eyebrow fade-up in-view" style="opacity:1;">${c.intro.eyebrow}</p>
+      <p class="intro-mark fade-up d1">for ${c.recipientName}</p>
+      <h1 class="intro-title fade-up d2">
+        ${c.intro.title1}<br/>${c.intro.title2}
+      </h1>
+      <p class="intro-sub fade-up d3">${c.intro.sub}</p>
+      <div class="scroll-cue fade-up d4">
+        <span>Scroll</span>
+        <span class="scroll-cue-line" aria-hidden="true"></span>
+      </div>
+    </div>
+  </section>`;
+}
+
+/* ================================================================
+   COMPONENT: StarFireSapphireScene (identity)
+   ================================================================ */
+function StarFireSapphireScene(c){
+  const glyphs = {
+    star: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M32 4 L38 26 L60 32 L38 38 L32 60 L26 38 L4 32 L26 26 Z" fill="var(--starlight)" opacity="0.9"/></svg>`,
+    fire: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M32 4C32 4 44 18 44 32C44 42 38 50 32 50C26 50 20 42 20 32C20 26 24 22 24 22C24 22 26 30 30 30C34 30 32 14 32 4Z" fill="var(--ember)" opacity="0.9"/></svg>`,
+    sapphire: `<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M32 6 L52 24 L44 58 L20 58 L12 24 Z" fill="var(--sapphire-light)" opacity="0.9"/></svg>`,
+  };
+  const items = c.identity.items.map((item, i) => `
+    <div class="identity-item fade-up d${i+1}">
+      <div class="identity-glyph">${glyphs[item.color]}</div>
+      <p class="identity-word ${item.color}">${item.word}</p>
+      <p class="identity-desc">${item.desc}</p>
+    </div>
+  `).join('');
+
+  return `
+  <section id="identity" class="scene" aria-label="Who you are">
+    <div class="scene-inner">
+      <p class="eyebrow fade-up">${c.identity.eyebrow}</p>
+      <h2 class="display fade-up d1">${c.identity.heading}</h2>
+      <p class="lede fade-up d2">${c.identity.lede}</p>
+      <div class="identity-grid">${items}</div>
+    </div>
+  </section>`;
+}
+
+/* ================================================================
+   COMPONENT: MemoryConstellation
+   ================================================================ */
+function MemoryConstellation(c){
+  const stars = c.constellation.stars.map((s, i) => `
+    <button class="mem-star" style="top:${s.top}; left:${s.left};" data-index="${i}" aria-label="Open memory: ${s.label}">
+      <span class="mem-star-dot" aria-hidden="true"></span>
+      <span class="mem-star-label" aria-hidden="true">${s.label}</span>
+    </button>
+  `).join('');
+
+  return `
+  <section id="constellation" class="scene constellation-scene" aria-label="Memory constellation">
+    <div class="scene-inner" style="max-width:900px;">
+      <p class="eyebrow fade-up">${c.constellation.eyebrow}</p>
+      <h2 class="display fade-up d1">${c.constellation.heading}</h2>
+      <p class="lede fade-up d2">${c.constellation.lede}</p>
+      <div class="constellation-stage fade-up d3" id="constellationStage" role="group" aria-label="Tap a star to open a memory">
+        ${stars}
+      </div>
+    </div>
+  </section>
+
+  <div class="memory-panel" id="memoryPanel" role="dialog" aria-modal="true" aria-label="Memory detail">
+    <div class="memory-card">
+      <img class="memory-photo" id="memoryPhoto" src="" alt="" />
+      <p class="memory-date" id="memoryDate"></p>
+      <p class="memory-caption" id="memoryCaption" style="margin-top:8px;"></p>
+      <button class="memory-close" id="memoryClose">Close</button>
+    </div>
+  </div>`;
+}
+
+/* ================================================================
+   COMPONENT: TributeScene
+   ================================================================ */
+function TributeScene(c){
+  const lines = c.tribute.lines.map((line, i) => `
+    <p class="tribute-line fade-up d${Math.min(i+1,4)}">${line}</p>
+  `).join('');
+  return `
+  <section id="tribute" class="scene tribute-scene" aria-label="Tribute">
+    <div class="scene-inner">
+      <p class="eyebrow fade-up">${c.tribute.eyebrow}</p>
+      <div class="tribute-lines">${lines}</div>
+    </div>
+  </section>`;
+}
+
+/* ================================================================
+   COMPONENT: SecretMoments
+   ================================================================ */
+function SecretMoments(c){
+  const items = c.secrets.items.map((item, i) => `
+    <div class="secret-item" data-secret-index="${i}">
+      <button class="secret-trigger" aria-expanded="false">
+        <span>${item.title}</span>
+        <span class="plus" aria-hidden="true">+</span>
+      </button>
+      <div class="secret-body"><p>${item.body}</p></div>
+    </div>
+  `).join('');
+
+  return `
+  <section id="secrets" class="scene secrets-scene" aria-label="Private notes">
+    <div class="scene-inner">
+      <p class="eyebrow fade-up">${c.secrets.eyebrow}</p>
+      <h2 class="display fade-up d1">${c.secrets.heading}</h2>
+      <div class="secrets-grid fade-up d2">${items}</div>
+    </div>
+  </section>`;
+}
+
+/* ================================================================
+   COMPONENT: BirthdayCake
+   ================================================================ */
+function BirthdayCake(c){
+  return `
+  <section id="cake" class="scene cake-scene" aria-label="Make a wish">
+    <div class="scene-inner">
+      <p class="eyebrow fade-up">${c.cake.eyebrow}</p>
+      <h2 class="display fade-up d1">${c.cake.heading}</h2>
+      <button class="cake-stage" id="cakeButton" aria-label="Blow out the candle">
+        <div class="candle" id="candle">
+          <div class="flame" aria-hidden="true"></div>
+        </div>
+        <div class="cake-body" aria-hidden="true"></div>
+      </button>
+      <p class="cake-tap-hint fade-up d2" id="cakeHint">${c.cake.tapHint}</p>
+      <h2 class="display" id="cakeAfterHeading" style="margin-top:26px; opacity:0; min-height:0;">${c.cake.afterHeading}</h2>
+    </div>
+  </section>`;
+}
+
+/* ================================================================
+   COMPONENT: CelebrationScene
+   ================================================================ */
+function CelebrationScene(c){
+  return `
+  <section id="celebration" class="scene celebration-scene" aria-label="Celebration">
+    <canvas class="confetti-canvas" id="confettiCanvas" aria-hidden="true"></canvas>
+    <div class="scene-inner" style="position:relative; z-index:3;">
+      <h2 class="display fade-up">${c.celebration.heading}</h2>
+      <p class="lede fade-up d1">${c.celebration.lede}</p>
+    </div>
+  </section>`;
+}
+
+/* ================================================================
+   COMPONENT: FinalMessage
+   ================================================================ */
+function FinalMessage(c){
+  return `
+  <section id="final" class="scene final-scene" aria-label="Final message">
+    <div class="scene-inner">
+      <p class="eyebrow fade-up">for ${c.recipientName}, always</p>
+      <p class="final-message fade-up d1">${c.final.message}</p>
+      <div class="hairline fade-up d2" style="margin-top:44px;"></div>
+      <p class="signature fade-up d3">${c.final.signature}<br/>${c.authorName}</p>
+      <p class="signature-sub fade-up d4">This little universe was made for you</p>
+    </div>
+  </section>`;
+}
+
+/* ================================================================
+   COMPONENT: ProgressIndicator
+   ================================================================ */
+function ProgressIndicator(scenes){
+  const rail = document.getElementById('progressRail');
+  rail.innerHTML = scenes.map(s =>
+    `<button data-target="${s.id}" aria-label="Go to section ${s.num}: ${s.label}">${s.num}</button>`
+  ).join('');
+
+  rail.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    });
+  });
+}
+
+function updateProgressIndicator(activeId){
+  document.querySelectorAll('.progress-rail button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.target === activeId);
+  });
+}
+
+/* ================================================================
+   ExperienceController — mounts scenes, wires observers & interactions
+   ================================================================ */
+function prefersReducedMotion(){
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function mountExperience(){
+  const main = document.getElementById('main');
+  main.innerHTML = [
+    IntroScene(CONTENT),
+    StarFireSapphireScene(CONTENT),
+    MemoryConstellation(CONTENT),
+    TributeScene(CONTENT),
+    SecretMoments(CONTENT),
+    BirthdayCake(CONTENT),
+    CelebrationScene(CONTENT),
+    FinalMessage(CONTENT),
+  ].join('\n');
+
+  ProgressIndicator(SCENES);
+  wireScrollObservers();
+  wireConstellation();
+  wireSecrets();
+  wireCake();
+  wireMusic();
+  ParticleBackground.init();
+  wireMobileProgressBar();
+}
+
+/* Fade-up reveal on scroll */
+function wireScrollObservers(){
+  const reduced = prefersReducedMotion();
+  const fadeEls = document.querySelectorAll('.fade-up');
+  if (reduced){
+    fadeEls.forEach(el => el.classList.add('in-view'));
+  } else {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting){
+          entry.target.classList.add('in-view');
+        }
+      });
+    }, { threshold: 0.2, rootMargin: '0px 0px -8% 0px' });
+    fadeEls.forEach(el => io.observe(el));
+  }
+
+  // Active scene tracking for progress indicator
+  const sceneEls = SCENES.map(s => document.getElementById(s.id)).filter(Boolean);
+  const sceneIO = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){
+        updateProgressIndicator(entry.target.id);
+      }
+    });
+  }, { threshold: 0.5 });
+  sceneEls.forEach(el => sceneIO.observe(el));
+}
+
+function wireMobileProgressBar(){
+  const fill = document.getElementById('mobileProgressFill');
+  if (!fill) return;
+  const update = () => {
+    const scrolled = window.scrollY;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = max > 0 ? (scrolled / max) * 100 : 0;
+    fill.style.width = pct + '%';
+  };
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+}
+
+/* Memory constellation interactions */
+function wireConstellation(){
+  const stage = document.getElementById('constellationStage');
+  if (!stage) return;
+  const panel = document.getElementById('memoryPanel');
+  const photo = document.getElementById('memoryPhoto');
+  const caption = document.getElementById('memoryCaption');
+  const date = document.getElementById('memoryDate');
+  const closeBtn = document.getElementById('memoryClose');
+  let lastFocused = null;
+
+  function openMemory(index, triggerEl){
+    const data = CONTENT.constellation.stars[index];
+    photo.src = data.photo;
+    photo.alt = data.label;
+    caption.textContent = data.caption;
+    date.textContent = data.date;
+    panel.classList.add('open');
+    lastFocused = triggerEl;
+    triggerEl.classList.add('opened');
+    closeBtn.focus();
+  }
+  function closeMemory(){
+    panel.classList.remove('open');
+    if (lastFocused){ lastFocused.focus(); }
+  }
+
+  stage.querySelectorAll('.mem-star').forEach(star => {
+    star.addEventListener('click', () => openMemory(Number(star.dataset.index), star));
+  });
+  closeBtn.addEventListener('click', closeMemory);
+  panel.addEventListener('click', (e) => { if (e.target === panel) closeMemory(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && panel.classList.contains('open')) closeMemory();
+  });
+}
+
+/* Secret moments accordion */
+function wireSecrets(){
+  document.querySelectorAll('.secret-item').forEach(item => {
+    const trigger = item.querySelector('.secret-trigger');
+    trigger.addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      item.classList.toggle('open', !isOpen);
+      trigger.setAttribute('aria-expanded', String(!isOpen));
+    });
+  });
+}
+
+/* Birthday cake candle interaction -> triggers celebration confetti */
+function wireCake(){
+  const btn = document.getElementById('cakeButton');
+  const candle = document.getElementById('candle');
+  const hint = document.getElementById('cakeHint');
+  const afterHeading = document.getElementById('cakeAfterHeading');
+  if (!btn) return;
+
+  // Light the candle shortly after scene enters view
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){
+        setTimeout(() => candle.classList.add('lit'), 500);
+        io.disconnect();
+      }
+    });
+  }, { threshold: 0.5 });
+  io.observe(document.getElementById('cake'));
+
+  let blown = false;
+  btn.addEventListener('click', () => {
+    if (blown) return;
+    blown = true;
+    candle.classList.remove('lit');
+    hint.style.transition = 'opacity .5s';
+    hint.style.opacity = '0';
+    afterHeading.style.transition = 'opacity 1s ease .3s';
+    afterHeading.style.opacity = '1';
+    Confetti.burstInScene();
+  });
+}
+
+/* ================================================================
+   MusicController
+   ================================================================ */
+const MusicController = {
+  audio: null,
+  playing: false,
+  init(){
+    this.audio = document.getElementById('bgMusic');
+    if (CONTENT.musicUrl){
+      this.audio.src = CONTENT.musicUrl;
+    }
+  },
+  toggle(){
+    if (!CONTENT.musicUrl) return false;
+    if (this.playing){
+      this.audio.pause();
+      this.playing = false;
+    } else {
+      this.audio.play().catch(() => {});
+      this.playing = true;
+    }
+    return this.playing;
+  }
+};
+
+function wireMusic(){
+  MusicController.init();
+  const btn = document.getElementById('musicToggle');
+  if (!CONTENT.musicUrl){
+    btn.style.opacity = '0.35';
+    btn.setAttribute('aria-label', 'Music not available');
+  }
+  btn.addEventListener('click', () => {
+    const isPlaying = MusicController.toggle();
+    btn.classList.toggle('paused', !isPlaying);
+    btn.setAttribute('aria-pressed', String(isPlaying));
+    btn.setAttribute('aria-label', isPlaying ? 'Pause background music' : 'Play background music');
+  });
+}
+
+/* ================================================================
+   ParticleBackground — ambient starfield across the whole page
+   ================================================================ */
+const ParticleBackground = {
+  canvas: null, ctx: null, stars: [], raf: null,
+  init(){
+    this.canvas = document.getElementById('particle-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.resize();
+    this.buildStars();
+    window.addEventListener('resize', () => { this.resize(); this.buildStars(); });
+
+    if (prefersReducedMotion()){
+      this.drawStatic();
+    } else {
+      this.animate();
+    }
+  },
+  resize(){
+    this.canvas.width = window.innerWidth * devicePixelRatio;
+    this.canvas.height = document.documentElement.scrollHeight * devicePixelRatio;
+    this.canvas.style.height = document.documentElement.scrollHeight + 'px';
+    this.ctx.scale(devicePixelRatio, devicePixelRatio);
+  },
+  buildStars(){
+    const isMobile = window.innerWidth < 720;
+    const density = isMobile ? 9000 : 5500; // higher = fewer particles (optimize for mobile)
+    const w = window.innerWidth;
+    const h = document.documentElement.scrollHeight;
+    const count = Math.floor((w * h) / density);
+    this.stars = new Array(count).fill(0).map(() => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.1 + 0.3,
+      baseAlpha: Math.random() * 0.5 + 0.2,
+      speed: Math.random() * 0.015 + 0.004,
+      phase: Math.random() * Math.PI * 2,
+      hue: Math.random() > 0.85 ? 'gold' : (Math.random() > 0.5 ? 'blue' : 'white'),
+    }));
+  },
+  drawStatic(){
+    const ctx = this.ctx;
+    ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    this.stars.forEach(s => {
+      ctx.beginPath();
+      ctx.fillStyle = this.colorFor(s, s.baseAlpha);
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+  },
+  colorFor(s, alpha){
+    if (s.hue === 'gold') return `rgba(212,162,76,${alpha})`;
+    if (s.hue === 'blue') return `rgba(111,157,232,${alpha})`;
+    return `rgba(245,243,236,${alpha})`;
+  },
+  t: 0,
+  animate(){
+    this.t += 1;
+    const ctx = this.ctx;
+    ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+    this.stars.forEach(s => {
+      const alpha = s.baseAlpha + Math.sin(this.t * s.speed + s.phase) * 0.25;
+      ctx.beginPath();
+      ctx.fillStyle = this.colorFor(s, Math.max(0.05, alpha));
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+    this.raf = requestAnimationFrame(() => this.animate());
+  }
+};
+
+/* ================================================================
+   Confetti — used at candle-blow + celebration scene
+   ================================================================ */
+const Confetti = {
+  particles: [],
+  canvas: null, ctx: null, running: false,
+  colors: ['#d4a24c', '#e8734a', '#6f9de8', '#f5f3ec'],
+  burstInScene(){
+    this.canvas = document.getElementById('confettiCanvas');
+    if (!this.canvas) return;
+    this.ctx = this.canvas.getContext('2d');
+    this.resize();
+    const isMobile = window.innerWidth < 720;
+    const n = isMobile ? 70 : 140;
+    const w = this.canvas.width / devicePixelRatio;
+    for (let i=0; i<n; i++){
+      this.particles.push({
+        x: w/2 + (Math.random()-0.5) * 120,
+        y: 40,
+        vx: (Math.random()-0.5) * 6,
+        vy: Math.random() * -6 - 2,
+        size: Math.random() * 6 + 3,
+        color: this.colors[Math.floor(Math.random()*this.colors.length)],
+        rot: Math.random() * 360,
+        vrot: (Math.random()-0.5) * 10,
+        gravity: 0.12 + Math.random()*0.05,
+        life: 1,
+      });
+    }
+    if (!this.running){
+      this.running = true;
+      this.animate();
+    }
+  },
+  resize(){
+    if (!this.canvas) return;
+    const scene = document.getElementById('celebration');
+    this.canvas.width = scene.clientWidth * devicePixelRatio;
+    this.canvas.height = scene.clientHeight * devicePixelRatio;
+    this.ctx.setTransform(1,0,0,1,0,0);
+    this.ctx.scale(devicePixelRatio, devicePixelRatio);
+  },
+  animate(){
+    const ctx = this.ctx;
+    const w = this.canvas.width/devicePixelRatio, h = this.canvas.height/devicePixelRatio;
+    ctx.clearRect(0,0,w,h);
+    this.particles.forEach(p => {
+      p.vy += p.gravity;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      p.life -= 0.006;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI/180);
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.5);
+      ctx.restore();
+    });
+    this.particles = this.particles.filter(p => p.life > 0 && p.y < h + 40);
+    if (this.particles.length > 0){
+      requestAnimationFrame(() => this.animate());
+    } else {
+      this.running = false;
+    }
+  }
+};
+
+/* Also gently trigger a confetti burst when celebration scene enters view */
+function wireCelebrationAutoburst(){
+  const scene = document.getElementById('celebration');
+  if (!scene) return;
+  let fired = false;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && !fired){
+        fired = true;
+        setTimeout(() => Confetti.burstInScene(), 300);
+      }
+    });
+  }, { threshold: 0.4 });
+  io.observe(scene);
+}
+
+/* ================================================================
+   Boot
+   ================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  mountExperience();
+  wireCelebrationAutoburst();
+});
+</script>
+</body>
+</html>
